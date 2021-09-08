@@ -1,0 +1,41 @@
+修改属性值 -》触发set -》遍历subs数组 -》调用每个watcher的update方法 -》触发vm._update(vm._render(), hydrating)，其中vm._render()会根据当前组件信息生成新的vNode -》如果没有旧vnode(vm._vnode)，则直接调用vm.__patch__(vm.$el, newVNode, hydrating, ...)生成新真实dom节点，否则调用vm.__patch__(oldvnode, newVNode)进行diff -》进行diff：在vm.__patch__方法中调用sameVnode判断2个vnode的基本属性（key、tag、data、isComment、inputtype）是否相同，相同说明是局部更新，可以进行diff，不同则说明是新的节点跳过diff，根据newVnode新建真实dom删除老dom -》如果进行diff，则调用patchVnode(oldvnode, newVNode, insertedVnodeQueue, ...): 
+		oldvnode === newVNode
+			  Y |
+		返回<---| N
+				|
+		更新真实dom节点data属性
+				|
+				|
+		oldvnode的text有值吗
+				|	Y
+				|--------oldvnode.text !== newVNode.text ? ---> 替换oldvnode文本
+				|
+		newvnode的text有值吗
+				|	Y
+				|-------> 将newvnode.text赋值给oldvnode.text
+				|
+	oldvnode和newvnode都有children吗 -------如果oldch !== nch 调用updateChildren -------------------------------------------|
+				|						Y																					|								  Y
+				|N																					判断oldch数组的第一个vnode(oldStartVnode)是否undefined？ -----> oldStartIdx++
+				|																											|
+	只有newvnode有：如果oldvnode有text，则清空；直接将nch添加到真实dom节点下												| N
+				|																											|								 Y
+				|																				判断oldch数组的最后一个vnode(oldStartVnode)是否undefined？ -----> oldEndIdx--
+	只有oldvnode有：移除oldch																								|
+				|																											|							Y
+				|																					判断oldch第一个vnode和nch第一个vnode是否sameVnode ----> 调用patchVnode继续递归diff
+	都没有：oldvnode有text值吗？有的话清空																					|
+																															|
+																								判断oldch最后一个vnode和nch最后一个vnode是否sameVnode ----> 调用patchVnode继续递归diff
+																															|
+																															|
+																								判断oldch第一个vnode和nch最后一个vnode是否sameVnode ----> 调用patchVnode继续递归diff
+																															|
+																															|
+																								判断oldch最后一个vnode和nch第一个vnode是否sameVnode ----> 调用patchVnode继续递归diff
+																															|
+																															|
+																								判断oldch最后一个vnode和nch第一个vnode是否sameVnode ----> 调用patchVnode继续递归diff
+																															|
+																															|
+																					都不相同，以oldch各个vnode的key/index生成oldKeyToIdx的map，根据nch第一个vnode的key查找oldKeyToIdx，如果没找到，则作为新节点插入，如果找到则获取下标后在oldch中找到对应oldvnode，调用patchVnode继续比较oldvnode和newstarNode，然后将前面找到的oldch[index]=undefined，将patch后的oldvnode插到第一个
