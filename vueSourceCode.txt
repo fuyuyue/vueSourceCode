@@ -3,14 +3,10 @@
 			  Y |
 		返回<---| N
 				|
-		更新真实dom节点data属性
+	更新真实dom节点data属性(调用各个属性的update，比如attr不一致则调用setAttribute()修改)
 				|
 				|
-		oldvnode的text有值吗
-				|	Y
-				|--------oldvnode.text !== newVNode.text ? ---> 替换oldvnode文本
-				|
-		newvnode的text有值吗
+		newvnode.text有值吗
 				|	Y
 				|-------> 将newvnode.text赋值给oldvnode.text
 				|
@@ -29,13 +25,13 @@
 																								判断oldch最后一个vnode和nch最后一个vnode是否sameVnode ----> 调用patchVnode继续递归diff
 																															|
 																															|
-																								判断oldch第一个vnode和nch最后一个vnode是否sameVnode ----> 调用patchVnode继续递归diff
+																								判断oldch第一个vnode和nch最后一个vnode是否sameVnode ----> 调用patchVnode继续递归diff，将oldStartVnode移到当前oldEndVnode的后面
 																															|
 																															|
-																								判断oldch最后一个vnode和nch第一个vnode是否sameVnode ----> 调用patchVnode继续递归diff
+																								判断oldch最后一个vnode和nch第一个vnode是否sameVnode ----> 调用patchVnode继续递归diff，将oldEndVnode移到oldStartVnode前面
 																															|
 																															|
-																								判断oldch最后一个vnode和nch第一个vnode是否sameVnode ----> 调用patchVnode继续递归diff
+																					都不相同，以oldch各个vnode的key/index生成oldKeyToIdx的map，根据nch第一个vnode的key查找oldKeyToIdx，如果没找到，则作为新节点插入，如果找到则获取下标后在oldch中找到对应oldvnode，调用patchVnode继续比较oldvnode和newstarNode，然后将前面找到的oldch[index]=undefined，将patch后的oldvnode插到当前oldStartVnode前面；++newStartIdx
 																															|
 																															|
-																					都不相同，以oldch各个vnode的key/index生成oldKeyToIdx的map，根据nch第一个vnode的key查找oldKeyToIdx，如果没找到，则作为新节点插入，如果找到则获取下标后在oldch中找到对应oldvnode，调用patchVnode继续比较oldvnode和newstarNode，然后将前面找到的oldch[index]=undefined，将patch后的oldvnode插到第一个
+																										最后添加nch剩余节点到真实dom；移除oldch剩余节点
